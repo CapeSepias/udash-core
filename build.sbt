@@ -42,6 +42,7 @@ lazy val udash = project.in(file("."))
   .aggregate(
     `core-macros`, `core-shared-JS`, `core-shared-JVM`, `core-frontend`,
     `rpc-macros`, `rpc-shared-JS`, `rpc-shared-JVM`, `rpc-frontend`, `rpc-backend`,
+    `rest-macros`, `rest-shared-JS`, `rest-shared-JVM`, `rest-frontend`, `rest-backend`,
     `i18n-shared-JS`, `i18n-shared-JVM`, `i18n-frontend`, `i18n-backend`
   )
   .settings(publishArtifact := false)
@@ -117,6 +118,46 @@ lazy val `rpc-frontend` = project.in(file("rpc/frontend")).enablePlugins(ScalaJS
   .settings(commonJSSettings: _*)
   .settings(
     jsDependencies ++= rpcFrontendJsDeps.value
+  )
+
+lazy val `rest-macros` = project.in(file("rest/macros"))
+  .dependsOn(`rpc-macros`)
+  .settings(commonSettings: _*).settings(
+    libraryDependencies ++= Seq(
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "com.avsystem.commons" %% "commons-macros" % avsCommonsVersion
+    )
+  )
+
+lazy val `rest-shared` = crossProject.crossType(CrossType.Pure).in(file("rest/shared"))
+  .configure(_.dependsOn(`rpc-shared` % CompileAndTest))
+  .jsConfigure(_.dependsOn(`rest-macros`))
+  .jvmConfigure(_.dependsOn(`rest-macros`))
+  .settings(commonSettings: _*).settings(
+    libraryDependencies ++= restCrossDeps.value,
+    libraryDependencies ++= restCrossTestDeps.value
+  )
+  .jsSettings(commonJSSettings:_*)
+  .jvmSettings(
+    libraryDependencies ++= restSharedJVMDeps.value
+  )
+
+lazy val `rest-shared-JVM` = `rest-shared`.jvm
+lazy val `rest-shared-JS` = `rest-shared`.js
+
+lazy val `rest-backend` = project.in(file("rest/backend"))
+  .dependsOn(`rest-shared-JVM` % CompileAndTest)
+  .settings(commonSettings: _*).settings(
+    libraryDependencies ++= restBackendDeps.value,
+    libraryDependencies ++= restBackendTestDeps.value
+  )
+
+lazy val `rest-frontend` = project.in(file("rest/frontend")).enablePlugins(ScalaJSPlugin)
+  .dependsOn(`rest-shared-JS` % CompileAndTest, `rpc-frontend` % CompileAndTest)
+  .settings(commonSettings: _*)
+  .settings(commonJSSettings: _*)
+  .settings(
+    jsDependencies ++= restFrontendJsDeps.value
   )
 
 lazy val `i18n-shared` = crossProject.crossType(CrossType.Pure).in(file("i18n/shared"))

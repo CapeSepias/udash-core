@@ -70,4 +70,20 @@ object Dependencies extends Build {
   val rpcBackendTestDeps = Def.setting(Seq(
     "org.scalamock" %% "scalamock-scalatest-support" % scalamockVersion
   ).map(_ % Test))
+
+  val restCrossDeps = Def.setting(Seq(
+    "com.avsystem.commons" %%% "commons-shared" % avsCommonsVersion
+  ))
+
+  val restCrossTestDeps = Def.setting(Seq[ModuleID]().map(_ % Test))
+
+  val restFrontendJsDeps = Def.setting(Seq())
+
+  val restSharedJVMDeps = Def.setting(Seq())
+
+  val restBackendDeps = Def.setting(Seq())
+
+  val restBackendTestDeps = Def.setting(Seq(
+    "org.scalamock" %% "scalamock-scalatest-support" % scalamockVersion
+  ).map(_ % Test))
 }

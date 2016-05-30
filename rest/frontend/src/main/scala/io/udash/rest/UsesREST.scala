@@ -4,7 +4,9 @@ import com.avsystem.commons.rpc.RPCMetadata
 import io.udash.rpc.UsesRemoteRPC
 import io.udash.rpc.internals.ServerConnector
 
-private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType]) extends UsesRemoteRPC[ServerRPCType] {
+import scala.util.Success
+
+private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType]) extends UsesRemoteREST[ServerRPCType] {
   import framework._
 
   /**
@@ -18,10 +20,46 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
     */
   protected def remoteRpcAsReal: AsRealRPC[ServerRPCType]
 
-  protected val connector: ServerConnector[RPCRequest]
+  protected val connector: RESTConnector
 
-  protected[rest] def fireRemote(getterChain: List[RawInvocation], invocation: RawInvocation): Unit =
-    sendRPCRequest(RPCFire(invocation, getterChain))
+  protected[rest] def fireRemote(getterChain: List[RawInvocation], invocation: RawInvocation): Unit = {
+    val urlBuilder = Seq.newBuilder[String]
+    val queryArgsBuilder = Map.newBuilder[String, String]
+    val headersArgsBuilder = Map.newBuilder[String, String]
+    var body: String = ???
+    var method: RESTConnector.HTTPMethod = ???
+
+    var metadata: RPCMetadata[_] = rpcMetadata
+    getterChain.foreach(inv => {
+      val methodName: String = inv.rpcName
+      urlBuilder += methodName
+
+      val methodMetadata = metadata.methodsByRpcName(methodName)
+      val paramsMetadata = methodMetadata.signature.paramMetadata
+      paramsMetadata.zip(inv.argLists).foreach(paramsList => {
+        paramsList._1.zip(paramsList._2).foreach({case (param, value) =>
+          val argTypeAnnotations = param.annotations.filter(_.isInstanceOf[ArgumentType])
+          if (argTypeAnnotations.size > 1) throw new RuntimeException("Too many parameter type annotations!")
+          argTypeAnnotations.headOption match {
+            case Some(_: Header) =>
+              headersArgsBuilder.+=((param.name, value))
+            case Some(_: Query) =>
+              queryArgsBuilder.+=((param.name, value))
+            case _ =>
+              urlBuilder += value
+          }
+        })
+      })
+
+      //TODO invocation
+
+      metadata = metadata.getterResultMetadata(methodName)
+    })
+
+
+
+    connector.send(s"/${urlBuilder.result().mkString("/")}", method, queryArgsBuilder.result(), headersArgsBuilder.result(), body)
+  }
 
   protected[rest] def callRemote(callId: String, getterChain: List[RawInvocation], invocation: RawInvocation): Unit =
     sendRPCRequest(RPCCall(invocation, getterChain, callId))

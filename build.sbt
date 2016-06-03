@@ -129,7 +129,7 @@ lazy val `rest-macros` = project.in(file("rest/macros"))
     )
   )
 
-lazy val `rest-shared` = crossProject.crossType(IJFull("rest")).in(file("rest/shared"))
+lazy val `rest-shared` = crossProject.crossType(CrossType.Pure).in(file("rest/shared"))
   .configure(_.dependsOn(`rpc-shared` % CompileAndTest))
   .jsConfigure(_.dependsOn(`rest-macros`))
   .jvmConfigure(_.dependsOn(`rest-macros`))

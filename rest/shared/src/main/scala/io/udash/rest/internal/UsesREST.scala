@@ -2,6 +2,7 @@ package io.udash.rest.internal
 
 import com.avsystem.commons.rpc.RPCMetadata
 import io.udash.rest._
+import io.udash.rest.internal.RESTConnector.POST
 import io.udash.rpc.UsesRemoteRPC
 
 import scala.collection.mutable
@@ -46,19 +47,20 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
     var metadata: RPCMetadata[_] = rpcMetadata
     getterChain.foreach(inv => {
       val methodName: String = inv.rpcName
-      urlBuilder += methodName
-
       val methodMetadata = metadata.signatures(methodName)
       val paramsMetadata = methodMetadata.paramMetadata
+
+      urlBuilder += methodMetadata.annotations.find(_.isInstanceOf[RESTName]).map(_.asInstanceOf[RESTName].restName).getOrElse(methodName)
       paramsMetadata.zip(inv.argLists).foreach(paramsList => {
         paramsList._1.zip(paramsList._2).foreach({case (param, value) =>
           val argTypeAnnotations = param.annotations.filter(_.isInstanceOf[ArgumentType])
           if (argTypeAnnotations.size > 1) throw new RuntimeException("Too many parameter type annotations!")
+          val paramName: String = param.annotations.find(_.isInstanceOf[RESTName]).map(_.asInstanceOf[RESTName].restName).getOrElse(param.name)
           argTypeAnnotations.headOption match {
             case Some(_: Header) =>
-              headersArgsBuilder.+=((param.name, rawToHeaderArgument(value)))
+              headersArgsBuilder.+=((paramName, rawToHeaderArgument(value)))
             case Some(_: Query) =>
-              queryArgsBuilder.+=((param.name, rawToQueryArgument(value)))
+              queryArgsBuilder.+=((paramName, rawToQueryArgument(value)))
             case Some(_: URLPart) =>
               urlBuilder += rawToURLPart(value)
             case _ => throw new RuntimeException("Missing parameter type annotations!")
@@ -69,18 +71,19 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
       metadata = metadata.getterResults(methodName)
     })
 
-    urlBuilder += invocation.rpcName
     val methodMetadata = metadata.signatures(invocation.rpcName)
     val paramsMetadata = methodMetadata.paramMetadata
+    urlBuilder += methodMetadata.annotations.find(_.isInstanceOf[RESTName]).map(_.asInstanceOf[RESTName].restName).getOrElse(invocation.rpcName)
     paramsMetadata.zip(invocation.argLists).foreach(paramsList => {
       paramsList._1.zip(paramsList._2).foreach({case (param, value) =>
         val argTypeAnnotations = param.annotations.filter(_.isInstanceOf[ArgumentType])
         if (argTypeAnnotations.size > 1) throw new RuntimeException("Too many parameter type annotations!")
+        val paramName: String = param.annotations.find(_.isInstanceOf[RESTName]).map(_.asInstanceOf[RESTName].restName).getOrElse(param.name)
         argTypeAnnotations.headOption match {
           case Some(_: Header) =>
-            headersArgsBuilder += ((param.name, rawToHeaderArgument(value)))
+            headersArgsBuilder += ((paramName, rawToHeaderArgument(value)))
           case Some(_: Query) =>
-            queryArgsBuilder += ((param.name, rawToQueryArgument(value)))
+            queryArgsBuilder += ((paramName, rawToQueryArgument(value)))
           case Some(_: URLPart) =>
             urlBuilder += rawToURLPart(value)
           case Some(_: Body) =>

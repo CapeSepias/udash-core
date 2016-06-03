@@ -59,7 +59,7 @@ class DefaultServerRESTTest extends UdashSharedTest {
       rest.framework.read[String](connector.body) should be("test")
 
       restServer.serviceOne().delete(r2.id.get)
-      connector.url should be(s"/serviceOne/delete/${r2.id.get}")
+      connector.url should be(s"/serviceOne/remove/${r2.id.get}")
       connector.method should be(RESTConnector.DELETE)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
@@ -75,11 +75,12 @@ class DefaultServerRESTTest extends UdashSharedTest {
       connector.body should be(null)
     }
 
-    "handle header arguments" in {
-      restServer.serviceOne().load(r3.id.get, "trashValue")
+    "handle query arguments" in {
+      restServer.serviceOne().load(r3.id.get, "trashValue", "thrashValue 123")
       connector.url should be(s"/serviceOne/load/${r3.id.get}")
       connector.method should be(RESTConnector.GET)
       connector.queryArguments("trash") should be("trashValue")
+      connector.queryArguments("trash_two") should be("thrashValue 123")
       connector.headers should be(Map.empty)
       connector.body should be(null)
     }

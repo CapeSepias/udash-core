@@ -76,14 +76,4 @@ object Dependencies extends Build {
   ))
 
   val restCrossTestDeps = Def.setting(Seq[ModuleID]().map(_ % Test))
-
-  val restFrontendJsDeps = Def.setting(Seq())
-
-  val restSharedJVMDeps = Def.setting(Seq())
-
-  val restBackendDeps = Def.setting(Seq())
-
-  val restBackendTestDeps = Def.setting(Seq(
-    "org.scalamock" %% "scalamock-scalatest-support" % scalamockVersion
-  ).map(_ % Test))
 }

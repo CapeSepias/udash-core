@@ -2,13 +2,13 @@ package io.udash.rest.internal
 
 import com.avsystem.commons.rpc.{MetadataAnnotation, RPCMetadata}
 import io.udash.rest._
-import io.udash.rest.internal.RESTConnector.{HTTPMethod, POST}
-import io.udash.rpc.UsesRemoteRPC
+import io.udash.rest.internal.RESTConnector.HTTPMethod
 
 import scala.collection.mutable
 import scala.concurrent.{Future, Promise}
 
-private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType]) {
+private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType],
+                                                     validRest: UdashRESTFramework#ValidREST[ServerRPCType]) {
   val framework: UdashRESTFramework
 
   import framework._

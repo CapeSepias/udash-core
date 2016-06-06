@@ -85,12 +85,13 @@ class DefaultServerRESTTest extends UdashSharedTest {
       connector.body should be(null)
     }
 
-    "handle overrided header argument name" in {
-      restServer.serviceTwo("token_123").create(r)
+    "handle header arguments" in {
+      restServer.serviceTwo("token_123", "pl").create(r)
       connector.url should be("/serviceTwo/create")
       connector.method should be(RESTConnector.POST)
       connector.queryArguments should be(Map.empty)
       connector.headers("X_AUTH_TOKEN") should be("token_123")
+      connector.headers("lang") should be("pl")
       rest.framework.read[TestRESTRecord](connector.body) should be(r)
     }
 

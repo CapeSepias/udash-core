@@ -9,7 +9,7 @@ case class TestRESTRecord(id: Option[Int], s: String)
 @REST
 trait TestRESTInterface {
   def serviceOne(): TestRESTInternalInterface
-  def serviceTwo(@RESTName("X_AUTH_TOKEN") @Header token: String): TestRESTInternalInterface
+  def serviceTwo(@RESTName("X_AUTH_TOKEN") @Header token: String, @Header lang: String): TestRESTInternalInterface
   @RESTName("service_three") def serviceThree(@URLPart arg: String): TestRESTInternalInterface
 }
 

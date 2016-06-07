@@ -1,13 +1,18 @@
 package io.udash.rest
 
+import com.avsystem.commons.concurrent.RunNowEC
 import com.avsystem.commons.serialization.GenCodec
 import io.udash.rest.internal.RESTConnector
 import io.udash.rest.internal.RESTConnector.HTTPMethod
-import io.udash.testing.UdashSharedTest
+import io.udash.testing.AsyncUdashSharedTest
+import org.scalatest.Succeeded
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Failure
 
-class DefaultServerRESTTest extends UdashSharedTest {
+class DefaultServerRESTTest extends AsyncUdashSharedTest {
+  implicit override val testExecutionContext: ExecutionContext = RunNowEC
+
   class ConnectorMock extends RESTConnector {
     var url: String = null
     var method: HTTPMethod = null
@@ -38,42 +43,52 @@ class DefaultServerRESTTest extends UdashSharedTest {
     val restServer = rest.remoteRpc
 
     "send valid REST requests via RESTConnector" in {
-      restServer.serviceOne().create(r)
+      val responses = Seq.newBuilder[Future[org.scalatest.Assertion]]
+
+      connector.response = rest.framework.write(r3)
+      responses += restServer.serviceOne().create(r).map(_ should be(r3))
       connector.url should be("/serviceOne/create")
       connector.method should be(RESTConnector.POST)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       rest.framework.read[TestRESTRecord](connector.body) should be(r)
 
-      restServer.serviceOne().update(r2.id.get)(r2)
+      connector.response = rest.framework.write(r2)
+      responses += restServer.serviceOne().update(r2.id.get)(r2).map(_ should be(r2))
       connector.url should be(s"/serviceOne/update/${r2.id.get}")
       connector.method should be(RESTConnector.PUT)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       rest.framework.read[TestRESTRecord](connector.body) should be(r2)
 
-      restServer.serviceOne().modify(r2.id.get)("test")
+      connector.response = rest.framework.write(r3)
+      responses += restServer.serviceOne().modify(r2.id.get)("test").map(_ should be(r3))
       connector.url should be(s"/serviceOne/change/${r2.id.get}")
       connector.method should be(RESTConnector.PATCH)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       rest.framework.read[String](connector.body) should be("test")
 
-      restServer.serviceOne().delete(r2.id.get)
+      connector.response = rest.framework.write(r)
+      responses += restServer.serviceOne().delete(r2.id.get).map(_ should be(r))
       connector.url should be(s"/serviceOne/remove/${r2.id.get}")
       connector.method should be(RESTConnector.DELETE)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       connector.body should be(null)
+      Future.sequence(responses.result()).map(_.fold(Succeeded)((x, y) => Succeeded))
     }
 
     "handle overloaded methods" in {
-      restServer.serviceOne().load()
+      val s = Seq(r, r2, r3)
+      connector.response = rest.framework.write(s)
+      val resp = restServer.serviceOne().load()
       connector.url should be(s"/serviceOne/load")
       connector.method should be(RESTConnector.GET)
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       connector.body should be(null)
+      resp.map(_ should be(s))
     }
 
     "handle query arguments" in {
@@ -103,6 +118,17 @@ class DefaultServerRESTTest extends UdashSharedTest {
       connector.queryArguments should be(Map.empty)
       connector.headers should be(Map.empty)
       rest.framework.read[TestRESTRecord](connector.body) should be(r)
+    }
+
+    "handle broken HTTP response" in {
+      connector.response = rest.framework.write(r2)
+      val resp = restServer.serviceOne().load()
+      connector.url should be(s"/serviceOne/load")
+      connector.method should be(RESTConnector.GET)
+      connector.queryArguments should be(Map.empty)
+      connector.headers should be(Map.empty)
+      connector.body should be(null)
+      resp.value.get should matchPattern { case Failure(ex: GenCodec.ReadFailure) => }
     }
 
     "compile recursive interface" in {

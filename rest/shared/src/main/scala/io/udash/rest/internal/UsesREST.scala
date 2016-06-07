@@ -5,10 +5,12 @@ import io.udash.rest._
 import io.udash.rest.internal.RESTConnector.HTTPMethod
 
 import scala.collection.mutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
 
 private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType],
-                                                     validRest: UdashRESTFramework#ValidREST[ServerRPCType]) {
+                                                     validRest: UdashRESTFramework#ValidREST[ServerRPCType],
+                                                     ec: ExecutionContext) {
   val framework: UdashRESTFramework
 
   import framework._
@@ -96,7 +98,10 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
 
     val restMethod: HTTPMethod = findRestMethod(invocation, metadata)
 
-    connector.send(s"/${urlBuilder.result().mkString("/")}", restMethod, queryArgsBuilder.result(), headersArgsBuilder.result(), body)
+    connector.send(s"/${urlBuilder.result().mkString("/")}", restMethod, queryArgsBuilder.result(), headersArgsBuilder.result(), body) onComplete {
+      case Success(text) => pendingCalls.remove(callId).foreach(p => p.success(stringToRaw(text)))
+      case Failure(ex) => pendingCalls.remove(callId).foreach(p => p.failure(ex))
+    }
   }
 
   protected class RawRemoteRPC(getterChain: List[RawInvocation]) extends RawRPC {

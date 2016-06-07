@@ -13,4 +13,12 @@ object RESTConnector {
   case object PATCH extends HTTPMethod
   case object PUT extends HTTPMethod
   case object DELETE extends HTTPMethod
+
+  sealed trait RequestError extends Exception {
+    val code: Int
+    val response: String
+  }
+  case class Redirection(code: Int, response: String) extends RequestError
+  case class ClientError(code: Int, response: String) extends RequestError
+  case class ServerError(code: Int, response: String) extends RequestError
 }

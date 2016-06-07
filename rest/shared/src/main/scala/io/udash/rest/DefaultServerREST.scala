@@ -1,15 +1,15 @@
 package io.udash.rest
 
 import com.avsystem.commons.rpc.RPCMetadata
-import io.udash.rest.internal.RESTConnector.HTTPMethod
 import io.udash.rest.internal.{RESTConnector, UsesREST}
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 class DefaultServerREST[ServerRPCType](override protected val connector: RESTConnector)
                                       (implicit override val remoteRpcAsReal: DefaultRESTFramework.AsRealRPC[ServerRPCType],
                                        override val rpcMetadata: RPCMetadata[ServerRPCType],
-                                       validRest: DefaultRESTFramework.ValidREST[ServerRPCType])
+                                       validRest: DefaultRESTFramework.ValidREST[ServerRPCType],
+                                       ec: ExecutionContext)
   extends UsesREST[ServerRPCType] {
 
   override val framework = DefaultRESTFramework
@@ -27,16 +27,14 @@ class DefaultServerREST[ServerRPCType](override protected val connector: RESTCon
 
 object DefaultServerREST {
   /** Creates [[io.udash.rest.DefaultServerREST]] for provided REST interfaces. */
-  def apply[ServerRPCType](serverUrl: String = "/api/")
+  def apply[ServerRPCType](serverUrl: String = "/api")
                           (implicit serverRpcAsReal: DefaultRESTFramework.AsRealRPC[ServerRPCType],
                            rpcMetadata: RPCMetadata[ServerRPCType],
-                           validRest: DefaultRESTFramework.ValidREST[ServerRPCType]): ServerRPCType = {
+                           validRest: DefaultRESTFramework.ValidREST[ServerRPCType],
+                           ec: ExecutionContext): ServerRPCType = {
 
-    val serverConnector = new RESTConnector {
-      override def send(url: String, method: HTTPMethod, queryArguments: Map[String, String], headers: Map[String, String], body: String): Future[String] =
-        Future.successful("")
-    }
-    lazy val serverRPC: DefaultServerREST[ServerRPCType] = new DefaultServerREST[ServerRPCType](serverConnector)
+    val serverConnector = new DefaultRESTConnector(serverUrl)
+    val serverRPC: DefaultServerREST[ServerRPCType] = new DefaultServerREST[ServerRPCType](serverConnector)
     serverRPC.remoteRpc
   }
 }

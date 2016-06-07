@@ -19,6 +19,8 @@ object Dependencies extends Build {
   val upickleVersion = "0.3.9"
   val jawnParserVersion = "0.8.4"
 
+  val scalaHttpClientVersion = "0.2.0"
+
   val scalaLoggingVersion = "3.1.0"
 
   val scalatestVersion = "3.0.0-M15"
@@ -72,7 +74,8 @@ object Dependencies extends Build {
   ).map(_ % Test))
 
   val restCrossDeps = Def.setting(Seq(
-    "com.avsystem.commons" %%% "commons-shared" % avsCommonsVersion
+    "com.avsystem.commons" %%% "commons-shared" % avsCommonsVersion,
+    "fr.hmil" %%% "scala-http-client" % scalaHttpClientVersion
   ))
 
   val restCrossTestDeps = Def.setting(Seq[ModuleID]().map(_ % Test))

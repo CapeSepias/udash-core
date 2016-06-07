@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Failure
 
 class DefaultServerRESTTest extends AsyncUdashSharedTest {
-  implicit override val testExecutionContext: ExecutionContext = RunNowEC
+  implicit val testExecutionContext: ExecutionContext = RunNowEC
 
   class ConnectorMock extends RESTConnector {
     var url: String = null

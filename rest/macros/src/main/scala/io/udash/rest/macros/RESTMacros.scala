@@ -14,6 +14,9 @@ class RESTMacros(override val c: blackbox.Context) extends RPCMacros(c) {
   val RESTFrameworkType = getType(tq"$RestPackage.UdashRESTFramework")
   val ValidRESTCls = tq"$FrameworkObj.ValidREST"
 
+  val RpcNameCls = tq"io.udash.rpc.RPCName"
+  val RestNameCls = tq"$RestPackage.RESTName"
+
   val RestMethodCls = tq"$RestPackage.RESTMethod"
   val GetCls = tq"$RestPackage.GET"
   val PostCls = tq"$RestPackage.POST"
@@ -35,6 +38,15 @@ class RESTMacros(override val c: blackbox.Context) extends RPCMacros(c) {
   def countRestMethodAnnotation(annotations: List[Annotation]) = countAnnotation(annotations, getType(RestMethodCls))
   def countArgumentTypeAnnotation(annotations: List[Annotation]) = countAnnotation(annotations, getType(ArgumentTypeCls))
 
+  def isNameAnnotationArgumentValid(annotations: List[Annotation], annotation: Type) = {
+    val count: Int = countAnnotation(annotations, annotation)
+    if (count == 1) {
+      val children = annotations.find(_.tree.tpe <:< annotation).get.tree.children
+      val Literal(Constant(name: String)) = children(1)
+      children.size == 2 && name.nonEmpty
+    } else count == 0
+  }
+
   def asValidRest[T: c.WeakTypeTag]: c.Tree = {
     val restType = weakTypeOf[T]
     val proxyables: List[ProxyableMember] = proxyableMethods(restType)
@@ -46,8 +58,24 @@ class RESTMacros(override val c: blackbox.Context) extends RPCMacros(c) {
         abort(s"Subinterface getter cannot be annotated with REST method annotation, ${getter.rpcName} in $restType does.")
       }
 
+      if (!isNameAnnotationArgumentValid(getter.method.annotations, getType(RpcNameCls))) {
+        abort(s"@$RpcNameCls annotation argument should be non empty string, value on ${getter.rpcName} in $restType is not.")
+      }
+
+      if (!isNameAnnotationArgumentValid(getter.method.annotations, getType(RestNameCls))) {
+        abort(s"@$RestNameCls annotation argument should be non empty string, value on ${getter.rpcName} in $restType is not.")
+      }
+
       getter.paramLists.foreach(paramsList => {
         paramsList.foreach(param => {
+          if (!isNameAnnotationArgumentValid(param.annotations, getType(RpcNameCls))) {
+            abort(s"@$RpcNameCls annotation argument should be non empty string, value on ${param.name} from ${getter.rpcName} in $restType is not.")
+          }
+
+          if (!isNameAnnotationArgumentValid(param.annotations, getType(RestNameCls))) {
+            abort(s"@$RestNameCls annotation argument should be non empty string, value on ${param.name} from ${getter.rpcName} in $restType is not.")
+          }
+
           if (countArgumentTypeAnnotation(param.annotations) != 1) {
             abort(s"REST method argument has to be annotated with exactly one argument type annotation, ${param.name} from ${getter.rpcName} in $restType has not.")
           }
@@ -68,8 +96,24 @@ class RESTMacros(override val c: blackbox.Context) extends RPCMacros(c) {
         abort(s"REST method has to be annotated with exactly one REST method annotation, ${method.rpcName} in $restType has not.")
       }
 
+      if (!isNameAnnotationArgumentValid(method.method.annotations, getType(RpcNameCls))) {
+        abort(s"@$RpcNameCls annotation argument should be non empty string, value on ${method.rpcName} in $restType is not.")
+      }
+
+      if (!isNameAnnotationArgumentValid(method.method.annotations, getType(RestNameCls))) {
+        abort(s"@$RestNameCls annotation argument should be non empty string, value on ${method.rpcName} in $restType is not.")
+      }
+
       method.paramLists.foreach(paramsList => {
         paramsList.foreach(param => {
+          if (!isNameAnnotationArgumentValid(param.annotations, getType(RpcNameCls))) {
+            abort(s"@$RpcNameCls annotation argument should be non empty string, value on ${param.name} from ${method.rpcName} in $restType is not.")
+          }
+
+          if (!isNameAnnotationArgumentValid(param.annotations, getType(RestNameCls))) {
+            abort(s"@$RestNameCls annotation argument should be non empty string, value on ${param.name} from ${method.rpcName} in $restType is not.")
+          }
+
           if (countArgumentTypeAnnotation(param.annotations) != 1) {
             abort(s"REST method argument has to be annotated with exactly one argument type annotation, ${param.name} from ${method.rpcName} in $restType has not.")
           }
@@ -90,6 +134,8 @@ class RESTMacros(override val c: blackbox.Context) extends RPCMacros(c) {
 
     q"""
       new $ValidRESTCls[$restType] {
+        implicit def ${c.freshName(TermName("self"))}: $ValidRESTCls[$restType] = this
+
         val subInterfaces = Seq(..$subinterfacesImplicits)
         val methods = Seq(..$methodsImplicits)
       }

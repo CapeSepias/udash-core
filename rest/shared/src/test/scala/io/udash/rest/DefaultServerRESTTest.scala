@@ -105,6 +105,47 @@ class DefaultServerRESTTest extends UdashSharedTest {
       rest.framework.read[TestRESTRecord](connector.body) should be(r)
     }
 
+    "compile recursive interface" in {
+      """import io.udash.rpc.RPCName
+         |case class TestRESTRecord(id: Option[Int], s: String)
+         |implicit val x: GenCodec[TestRESTRecord] = null
+         |
+         |@REST
+         |trait NotBrokenRESTInterface {
+         |  def serviceOne(): NotBrokenRESTInterface
+         |  def serviceTwo(@RESTName("X_AUTH_TOKEN") @Header token: String, @Header lang: String): NotBrokenRESTInterface
+         |  @RESTName("service_three") def serviceThree(@URLPart arg: String): NotBrokenRESTInterface
+         |  @GET @RESTName("load") @RPCName("loadAll") def load(): Future[Seq[TestRESTRecord]]
+         |}
+         |
+         |val rest: DefaultServerREST[NotBrokenRESTInterface] = new DefaultServerREST[NotBrokenRESTInterface](connector)
+       """.stripMargin should compile
+
+      """import io.udash.rpc.RPCName
+         |case class TestRESTRecord(id: Option[Int], s: String)
+         |implicit val x: GenCodec[TestRESTRecord] = null
+         |
+         |@REST
+         |trait NotBrokenRESTInterface {
+         |  def serviceOne(): NotBrokenRESTInternalInterface
+         |  def serviceTwo(@RESTName("X_AUTH_TOKEN") @Header token: String, @Header lang: String): NotBrokenRESTInternalInterface
+         |  @RESTName("service_three") def serviceThree(@URLPart arg: String): NotBrokenRESTInternalInterface
+         |}
+         |
+         |@REST
+         |trait NotBrokenRESTInternalInterface {
+         |  @RESTName("load") @RPCName("loadAll") def load(): NotBrokenRESTInterface
+         |  @GET def load(@URLPart id: Int, @Query trash: String, @Query @RESTName("trash_two") trash2: String): Future[TestRESTRecord]
+         |  @POST def create(@Body record: TestRESTRecord): Future[TestRESTRecord]
+         |  @PUT def update(@URLPart id: Int)(@Body record: TestRESTRecord): Future[TestRESTRecord]
+         |  @PATCH @RESTName("change") def modify(@URLPart id: Int)(@Body s: String): Future[TestRESTRecord]
+         |  @DELETE @RPCName("remove") def delete(@URLPart id: Int): Future[TestRESTRecord]
+         |}
+         |
+         |val rest: DefaultServerREST[NotBrokenRESTInterface] = new DefaultServerREST[NotBrokenRESTInterface](connector)
+       """.stripMargin should compile
+    }
+
     "not compile with interface without @REST annotation" in {
       """import io.udash.rpc.RPCName
          |case class TestRESTRecord(id: Option[Int], s: String)

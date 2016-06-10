@@ -79,6 +79,14 @@ class DefaultServerRESTTest extends AsyncUdashSharedTest {
       Future.sequence(responses.result()).map(_.fold(Succeeded)((x, y) => Succeeded))
     }
 
+    "handle deep interfaces" in {
+      restServer.serviceOne().deeper().load(r2.id.get)
+      connector.url should be(s"/serviceOne/deeper/load/${r2.id.get}")
+      connector.method should be(RESTConnector.GET)
+      connector.queryArguments should be(Map.empty)
+      connector.headers should be(Map.empty)
+    }
+
     "handle overloaded methods" in {
       val s = Seq(r, r2, r3)
       connector.response = rest.framework.write(s)

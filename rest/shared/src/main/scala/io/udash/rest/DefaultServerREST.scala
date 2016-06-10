@@ -27,13 +27,13 @@ class DefaultServerREST[ServerRPCType](override protected val connector: RESTCon
 
 object DefaultServerREST {
   /** Creates [[io.udash.rest.DefaultServerREST]] for provided REST interfaces. */
-  def apply[ServerRPCType](serverUrl: String = "/api")
+  def apply[ServerRPCType](host: String, port: Int, pathPrefix: String = "")
                           (implicit serverRpcAsReal: DefaultRESTFramework.AsRealRPC[ServerRPCType],
                            rpcMetadata: RPCMetadata[ServerRPCType],
                            validRest: DefaultRESTFramework.ValidREST[ServerRPCType],
                            ec: ExecutionContext): ServerRPCType = {
 
-    val serverConnector = new DefaultRESTConnector(serverUrl)
+    val serverConnector = new DefaultRESTConnector(host, port, pathPrefix)
     val serverRPC: DefaultServerREST[ServerRPCType] = new DefaultServerREST[ServerRPCType](serverConnector)
     serverRPC.remoteRpc
   }

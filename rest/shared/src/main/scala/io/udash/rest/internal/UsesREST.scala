@@ -46,6 +46,9 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
     val headersArgsBuilder = Map.newBuilder[String, String]
     var body: String = null
 
+    def shouldSkipRestName(annotations: Seq[MetadataAnnotation]): Boolean =
+      annotations.exists(_.isInstanceOf[SkipRESTName])
+
     def findRestName(annotations: Seq[MetadataAnnotation]): Option[String] =
       annotations.find(_.isInstanceOf[RESTName]).map(_.asInstanceOf[RESTName].restName)
 
@@ -53,7 +56,8 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
       val rpcMethodName: String = inv.rpcName
       val methodMetadata = metadata.signatures(rpcMethodName)
 
-      urlBuilder += findRestName(methodMetadata.annotations).getOrElse(rpcMethodName)
+      if (!shouldSkipRestName(methodMetadata.annotations))
+        urlBuilder += findRestName(methodMetadata.annotations).getOrElse(rpcMethodName)
       methodMetadata.paramMetadata.zip(inv.argLists).foreach { case (params, values) =>
         params.zip(values).foreach { case (param, value) =>
           val paramName: String = findRestName(param.annotations).getOrElse(param.name)
@@ -90,7 +94,7 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
     }
 
     var metadata: RPCMetadata[_] = rpcMetadata
-    getterChain.foreach(inv => {
+    getterChain.reverse.foreach(inv => {
       parseInvocation(inv, metadata)
       metadata = metadata.getterResults(inv.rpcName)
     })

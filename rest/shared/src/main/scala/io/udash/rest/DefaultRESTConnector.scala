@@ -11,18 +11,20 @@ import io.udash.rest.internal.RESTConnector.HTTPMethod
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
 
-class DefaultRESTConnector(val serverUrlPrefix: String)(implicit val ec: ExecutionContext) extends RESTConnector {
+class DefaultRESTConnector(val host: String, val port: Int, val pathPrefix: String)(implicit val ec: ExecutionContext) extends RESTConnector {
   private class InternalBodyPart(override val content: ByteBuffer) extends BodyPart {
     override val contentType: String = s"application/json; charset=utf-8"
   }
 
   override def send(url: String, method: HTTPMethod, queryArguments: Map[String, String], headers: Map[String, String], body: String): Future[String] = {
-    val response = HttpRequest()
-      .withURL(serverUrlPrefix.stripSuffix("/") + url)
+    val request: HttpRequest = HttpRequest()
+      .withHost(host)
+      .withPort(port)
+      .withURL(pathPrefix.stripSuffix("/") + url)
       .withMethod(method)
       .withQueryParameters(queryArguments)
       .withHeaders(headers)
-      .send(new InternalBodyPart(ByteBuffer.wrap(body.getBytes("utf-8"))))
+    val response = if (body != null) request.send(new InternalBodyPart(ByteBuffer.wrap(body.getBytes("utf-8")))) else request.send()
 
     response.flatMap(resp => {
       resp.statusCode / 100 match {

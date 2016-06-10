@@ -7,6 +7,7 @@ class REST extends io.udash.rpc.RPC
 
 /** Forces name of a method or an argument used in the interface to REST mapping. */
 class RESTName(val restName: String) extends MetadataAnnotation
+class SkipRESTName extends MetadataAnnotation
 
 sealed trait RESTMethod
 /** Annotated method will be send using `GET` HTTP method. */

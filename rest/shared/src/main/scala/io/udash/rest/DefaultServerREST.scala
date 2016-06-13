@@ -5,6 +5,7 @@ import io.udash.rest.internal.{RESTConnector, UsesREST}
 
 import scala.concurrent.ExecutionContext
 
+/** Default REST usage mechanism using [[io.udash.rest.DefaultRESTFramework]]. */
 class DefaultServerREST[ServerRPCType](override protected val connector: RESTConnector)
                                       (implicit override val remoteRpcAsReal: DefaultRESTFramework.AsRealRPC[ServerRPCType],
                                        override val rpcMetadata: RPCMetadata[ServerRPCType],
@@ -26,7 +27,7 @@ class DefaultServerREST[ServerRPCType](override protected val connector: RESTCon
 }
 
 object DefaultServerREST {
-  /** Creates [[io.udash.rest.DefaultServerREST]] for provided REST interfaces. */
+  /** Creates [[io.udash.rest.DefaultServerREST]] with [[io.udash.rest.DefaultRESTConnector]] for provided REST interfaces. */
   def apply[ServerRPCType](host: String, port: Int, pathPrefix: String = "")
                           (implicit serverRpcAsReal: DefaultRESTFramework.AsRealRPC[ServerRPCType],
                            rpcMetadata: RPCMetadata[ServerRPCType],

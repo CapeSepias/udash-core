@@ -5,7 +5,9 @@ import com.avsystem.commons.rpc.{FunctionRPCFramework, GetterRPCFramework}
 trait UdashRESTFramework extends GetterRPCFramework with FunctionRPCFramework {
   trait RawRPC extends GetterRawRPC with FunctionRawRPC
 
+  /** Transform `String` received from HTTP response to `RawValue`. */
   def stringToRaw(string: String): RawValue
+  /** Transform `RawValue` to `String` for HTTP request body. */
   def rawToString(raw: RawValue): String
 
   trait ValidREST[T]

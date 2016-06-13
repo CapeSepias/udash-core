@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType],
+abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: RPCMetadata[ServerRPCType],
                                                      validRest: UdashRESTFramework#ValidREST[ServerRPCType],
                                                      ec: ExecutionContext) {
   val framework: UdashRESTFramework
@@ -28,8 +28,11 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
 
   protected val connector: RESTConnector
 
+  /** Transform `RawValue` into String used in HTTP request header. */
   def rawToHeaderArgument(raw: RawValue): String
+  /** Transform `RawValue` into String used as HTTP request query argument. */
   def rawToQueryArgument(raw: RawValue): String
+  /** Transform `RawValue` into String used as URL part. */
   def rawToURLPart(raw: RawValue): String
 
   private val pendingCalls = mutable.Map.empty[String, Promise[RawValue]]
@@ -40,7 +43,7 @@ private[rest] abstract class UsesREST[ServerRPCType](implicit val rpcMetadata: R
     cid.toString
   }
 
-  protected[rest] def callRemote(callId: String, getterChain: List[RawInvocation], invocation: RawInvocation): Unit = {
+  private def callRemote(callId: String, getterChain: List[RawInvocation], invocation: RawInvocation): Unit = {
     val urlBuilder = Seq.newBuilder[String]
     val queryArgsBuilder = Map.newBuilder[String, String]
     val headersArgsBuilder = Map.newBuilder[String, String]

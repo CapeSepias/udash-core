@@ -2,7 +2,10 @@ package io.udash.rest.internal
 
 import scala.concurrent.Future
 
+/** Provides connection to REST server. */
 trait RESTConnector {
+  /** Sends HTTP request to REST server.
+    * It should fail with [[io.udash.rest.internal.RESTConnector.RequestError]] if server returned code different than 2xx. */
   def send(url: String, method: RESTConnector.HTTPMethod, queryArguments: Map[String, String], headers: Map[String, String], body: String): Future[String]
 }
 
@@ -18,7 +21,10 @@ object RESTConnector {
     val code: Int
     val response: String
   }
+  /** Error returned for 3xx response from server. */
   case class Redirection(code: Int, response: String) extends RequestError
+  /** Error returned for 4xx response from server. */
   case class ClientError(code: Int, response: String) extends RequestError
+  /** Error returned for 5xx response from server. */
   case class ServerError(code: Int, response: String) extends RequestError
 }

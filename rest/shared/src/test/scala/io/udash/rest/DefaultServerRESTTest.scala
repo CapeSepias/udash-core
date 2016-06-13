@@ -23,7 +23,6 @@ class DefaultServerRESTTest extends AsyncUdashSharedTest {
     var response = "{}"
 
     override def send(url: String, method: HTTPMethod, queryArguments: Map[String, String], headers: Map[String, String], body: String): Future[String] = {
-      println(s"$url $method $queryArguments $headers $body")
       this.url = url
       this.method = method
       this.queryArguments = queryArguments
